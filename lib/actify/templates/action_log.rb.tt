@@ -1,0 +1,6 @@
+class ActionLog < ApplicationRecord
+  belongs_to :actor, class_name: "User"
+  belongs_to :actionable, polymorphic: true
+
+  enum status: %i[created aborted finished failed]
+end

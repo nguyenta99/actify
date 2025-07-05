@@ -5,7 +5,7 @@ RSpec.describe Actify do
     expect(Actify::VERSION).not_to be nil
   end
 
-  it "does something useful" do
-    expect(false).to eq(true)
+  it "performs an action" do
+    expect(Actify.perform("run")).to eq("Performing: run")
   end
 end
