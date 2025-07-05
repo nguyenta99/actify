@@ -1,21 +1,22 @@
 class CreateActionLogs < ActiveRecord::Migration<%= migration_version %>
   def change
     create_table :action_logs do |t|
-      t.string :status
-      t.string :actor_id
+      t.integer :status, null: false
+      t.integer :actor_id
       t.string :action_code
       t.string :actionable_type
-      t.string :actionable_id
+      t.integer :actionable_id
       t.string :action_label
       t.text :action_data
       t.text :context
       t.text :object_before
       t.text :object_after
+      t.text :error
 
       t.timestamps
     end
 
-    add_index :action_logs, [:actionable_type, :actionable_id]
+    add_index :action_logs, [ :actionable_type, :actionable_id ]
     add_index :action_logs, :actor_id
   end
 end

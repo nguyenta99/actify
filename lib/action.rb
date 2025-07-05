@@ -99,7 +99,7 @@ class Action # rubocop:disable Metrics/ClassLength,Style/Documentation
     log
   end
 
-  def finalize_action_log(log, object, context)
+  def finalize_action_log(log, object, context) # rubocop:disable Metrics/AbcSize
     object_before = {}
     object_after = {}
 
@@ -108,8 +108,8 @@ class Action # rubocop:disable Metrics/ClassLength,Style/Documentation
       object_after[k] = v[1]
     end
 
-    log.object_before = object_before
-    log.object_after = object_after
+    log.object_before = object_before.as_json.to_s
+    log.object_after = object_after.as_json.to_s
 
     instance_exec(log, object, context, &hdl_finalize) if hdl_finalize
 
@@ -148,8 +148,7 @@ class Action # rubocop:disable Metrics/ClassLength,Style/Documentation
       action_code: code,
       action_label: label,
       action_data: context.data.to_s,
-      context: context.to_s,
-      object_before: object.to_s
+      context: context.to_s
     )
   end
 end
