@@ -16,6 +16,8 @@ Actify is a powerful Ruby gem that brings structured business actions to your Ra
   - [Executing Actions](#executing-actions)
   - [Action Logging](#action-logging)
 - [Configuration](#configuration)
+- [Rails Integration](#rails-integration)
+  - [RESTful API Controller](#restful-api-controller)
 - [Examples](#examples)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
@@ -135,6 +137,94 @@ order.action_logs
 # Get logs for specific action
 order.action_logs.where(action: "approve")
 ```
+
+## ⚙️ Configuration
+
+Customize Actify in `config/initializers/actify.rb`:
+
+```ruby
+Actify.configure do |config|
+  # Custom logger
+  config.logger = Rails.logger
+
+  # Additional context processors
+  config.add_context_processor do |context|
+    context.merge(ip: Current.request_ip)
+  end
+end
+```
+
+## 🔌 Rails Integration
+
+### RESTful API Controller
+
+Here's an example of a RESTful API controller that can handle actions for any model:
+
+```ruby
+class ActionsController < ApplicationController
+  before_action :get_object
+
+  def create
+    # Get the action from params and look it up in the model's Actions
+    action_code = params[:action_code]&.to_sym
+    action = @object_class::Actions[action_code]
+    
+    # Execute the action with context
+    action_log = action.commit!(@object, get_context)
+
+    # Return the action log as JSON
+    if action_log.finished?
+      render json: action_log.as_json(except: %i[object_before object_after])
+    else
+      render json: action_log.as_json(except: %i[object_before object_after]), 
+             status: 400
+    end
+  end
+
+  private
+
+  OBJECT_NAME_REGEX = Regexp.new('/([^/]+)/[^/]+/actions')
+
+  def get_context
+    Actify::Context.new(
+      actor: current_user,
+      data: params[:action_data]
+    )
+  end
+
+  def get_object
+    # Extract model name from URL (e.g., /api/orders/123/actions)
+    @object_name = request.url.match(OBJECT_NAME_REGEX)[1]
+    @object_class = @object_name.classify.constantize
+    
+    # Find the object using conventional Rails ID parameter
+    object_id_key = "#{@object_name.singularize}_id"
+    object_id = params[object_id_key]
+    @object = @object_class.find(object_id)
+  end
+end
+```
+
+This controller supports URLs like:
+```
+POST /api/v1/orders/123/actions
+{
+  "action_code": "approve",
+  "action_data": {
+    "reason": "Items in stock",
+    "priority": "high"
+  }
+}
+```
+
+The controller:
+1. Extracts the model name from the URL
+2. Finds the target object
+3. Looks up the requested action
+4. Creates a context with the current user and action data
+5. Executes the action and returns the result
+
+This provides a standardized API endpoint for executing any action on any model that includes Actify.
 
 ## 📝 Examples
 
